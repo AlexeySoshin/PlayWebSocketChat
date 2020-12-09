@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <title>WebSockets Chat Example</title>
+    <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+    <link rel="shortcut icon" type="image/png" href="@routes.Assets.versioned("images/favicon.png")">
+    <script src="@routes.Assets.versioned("javascripts/hello.js")" type="text/javascript"></script>
+        <style>
+            #messages {
+                height:400px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id = "content" class = "wrapper doc">
+            <article>
+                <H1>Chat</H1>
+                <div id = "messages">
+                    No messages yet
+                </div>
+                <div>
+                    Your name: <input id = "username" value = "Alexey" /><br />
+                    New message: <input id = "new_message" value = "Hello" />
+                        <button id = "send_button">Send</button>
+                </div>
+            </article>
+        </div>
+    </body>
+    <script>
+        const url = "ws://localhost:9000/chat"
+        const webSocket = new WebSocket(url);
+        const messages = document.getElementById("messages")
+
+        webSocket.onopen = function(event) {
+            webSocket.send(JSON.stringify({type: "connected"}))
+
+            document.getElementById("send_button").addEventListener("click", function() {
+                const username = document.getElementById("username").value
+                const message = document.getElementById("new_message").value
+                const payload = JSON.stringify({type: "new_message", username: username, message: message})
+                webSocket.send(payload)
+                console.log(username, message);
+            })
+
+            webSocket.onmessage = function(event) {
+                let newMessage = JSON.parse(event.data)
+                console.log(newMessage)
+                messages.innerHTML += "<div>" + newMessage["username"] + ": " + newMessage["message"] + "</div>"
+            }
+        }
+
+        //TODO onclose
+    </script>
+</html>
