@@ -53,18 +53,25 @@ class ChatActor(system: ActorSystem, out: ActorRef, messages: List[Message]) ext
     system.scheduler.scheduleAtFixedRate(Duration.Zero, 1.second, self, Tick)
   }
 
+  /**
+   * This function handles WebSocket messages
+   * @param msg
+   */
   def handle(msg: String): Unit = {
     println("Got message " + msg)
     val json = Json.parse(msg)
     (json \ "type").as[String] match {
       case "new_message" => messages += Message(System.currentTimeMillis(), msg)
-      case "connected" => // Send all previous messages
+      case "connected" => // Send all previous messages on first connection of a new client
         for (m <- messages) {
           out ! m.value
         }
     }
   }
 
+  /**
+   * Polling callback
+   */
   def checkForMessages(): Unit = {
 
     var q = messages.reverse
@@ -83,6 +90,10 @@ class ChatActor(system: ActorSystem, out: ActorRef, messages: List[Message]) ext
     lastChecked = System.currentTimeMillis()
   }
 
+  /**
+   * This function handles the Actor's messages
+   * @return
+   */
   def receive = {
     case Tick =>
       checkForMessages()
