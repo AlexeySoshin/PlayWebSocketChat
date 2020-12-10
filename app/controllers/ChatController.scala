@@ -39,8 +39,14 @@ case class Message(time: Long, value: String)
 
 class ChatActor(system: ActorSystem, out: ActorRef, messages: List[Message]) extends Actor {
 
+  // You need to trigger actor with some kind of message. This is just a constant message that will be ignored
   final val Tick = "tick"
+
   var lastChecked: Long = System.currentTimeMillis()
+
+  /**
+   * This is the place you either poll your datastore or subscribe to pushes from somewhere
+   */
   override def preStart(): Unit = {
     import system.dispatcher
     // Trigger this actor every second with no initial delay to check for new messages
@@ -50,15 +56,12 @@ class ChatActor(system: ActorSystem, out: ActorRef, messages: List[Message]) ext
   def handle(msg: String): Unit = {
     println("Got message " + msg)
     val json = Json.parse(msg)
-    val messageType = (json \ "type").as[String]
-    if (messageType == "new_message" ) {
-      messages += Message(System.currentTimeMillis(), msg)
-    }
-    else if (messageType == "connected") {
-      // Send all previous messages
-      for (m <- messages) {
-        out ! m.value
-      }
+    (json \ "type").as[String] match {
+      case "new_message" => messages += Message(System.currentTimeMillis(), msg)
+      case "connected" => // Send all previous messages
+        for (m <- messages) {
+          out ! m.value
+        }
     }
   }
 
